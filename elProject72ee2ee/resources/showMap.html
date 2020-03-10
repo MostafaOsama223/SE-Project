@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>I am a show map</title>
+</head>
+<body>
+	<h1>I Show MAPS!!</h1>
+</body>
+
+<script type="text/javascript">
+	var svg;
+	let traffic = ['#66cccc','#ffcc00','#fa163f'];
+
+	setInterval(getJsonData,500);
+
+	window.onload = function(){
+		var req = new XMLHttpRequest();
+		req.onreadystatechange = function(){
+			if(req.status == 200 & req.readyState == 4){
+				var res = req.responseText;
+				var doc = new DOMParser().parseFromString(res,'image/svg+xml');
+				document.body.appendChild(doc.firstChild);
+				svg = document.getElementById('mapHolder');
+				var roads = svg.childNodes;
+
+				for (var i = roads.length - 1; i >= 0; i--) {
+					if(roads[i].wholeText)	continue;
+					roads[i].removeAttributeNS(null,"onmouseover");
+					roads[i].removeAttributeNS(null,"onmouseout");
+					roads[i].removeAttributeNS(null,"onmouseleave");
+				}
+				getJsonData();
+			}			
+		}
+		req.open('GET','./updateRoads.php');
+		req.setRequestHeader('Accept','image/svg+xml');
+		req.send();
+	}
+
+	function getJsonData(){
+		var req = new XMLHttpRequest();
+		req.onreadystatechange = function(){
+			if(req.status == 200 & req.readyState == 4){
+				var res = req.responseText;
+				var roads = JSON.parse(res);
+				for (var i = roads.length - 1; i >= 0; i--) {
+					var roadNum = document.getElementById(roads[i]['id']);
+					roadNum.setAttribute('style','fill:' + traffic[roads[i]['traffic']]);
+				}
+			}			
+		}
+		req.open('GET','./updateRoads.php');
+		req.setRequestHeader('Accept','application/json');
+		req.send();
+	}
+</script>
+</html>
