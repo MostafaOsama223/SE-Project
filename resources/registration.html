@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="u">
+        <title>REGISTER SCREEN</title>
+        <link rel="stylesheet" href="../CSS/index.css">
+    </head>
+    <body>
+<!--         <form> -->
+            <div class="img_container">
+                <img src="regImage.png" alt="sign_up">
+            </div>
+
+            <div class="container">
+                <br>
+                <ul>
+                    <li>
+                        <label for="firstname"><b class="text">First Name</b></label>
+                        <input type="text" id="firstname" placeholder="Enter first name" style="margin-left: 20px">
+                    </li>
+                    <br>
+                    <br>
+                    <li>
+                        <label for="lastname"><b class="text">Last Name</b></label>
+                        <input type="text" id="lastname"  placeholder="Enter Last name"
+                               style="margin-left: 23px">
+                    </li>
+                    <br>
+                    <br>
+                    <li>
+                        <label for="username"><b class="text">User Name</b></label>
+                        <input type="text" id="username_in_reg"  placeholder="Enter Username"
+                               style="margin-left: 20px">
+                        <p id="alert1"></p>
+                    </li>
+                    <br>
+                    <br>
+                    <li>
+                        <label for="Email_Address"><b class="text">E-mail</b></label>
+                        <input type="text" id="Email_Address" placeholder="Enter Email Address" style="margin-left: 63px">
+                    </li>
+                    <br>
+                    <br>
+                    <li>
+                        <label for="password"><b class="text">Password</b></label>
+                        <input type="password" id="pass_in_reg" placeholder="Enter Password"
+                               style="margin-left: 36px">
+                    </li>
+                    <br>
+                    <br>
+                    <li>
+                        <input type="password" id="confirm_password" placeholder="Confirm Password" style="margin-left: 126px">
+                        <p id="alert2"></p>
+                    </li>
+                    <br>
+                    <br>
+                </ul>
+                <br>
+                <br>
+            </div>
+            <div class="last_container">
+                <button onclick="register()" class="submit"><b  >REGISTER</b></button>
+                <button onclick =  "gotoLogin()" class="submit"><b>CANCEL</b></button>
+            </div>
+ <!--        </form> -->
+</body>
+    <script src="../JS/register.js"></script>
+</html>

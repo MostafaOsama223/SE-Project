@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Map Editor</title>
+</head>
+<link rel="stylesheet" href="index.css">
+<body>	
+	<button onclick="createRoad(40,120,10)">New Road</button>
+	<button onclick="generateCode()">Generate Code</button>
+	<button onclick="removeObj()">Remove Road</button>
+	<button onclick="createTrafficL()">New Traffic Light</button>
+	<button id="map">Show map</button>
+	<p id="state">=D</p>
+
+</body>
+
+<script type="text/javascript">
+
+	var svgNS = "http://www.w3.org/2000/svg";
+	var svg;
+	let svgPos;
+	let roadID = [];
+	let trafficID = [];
+	var mapWidth;
+	var mapHeight;
+
+	var factorX;
+	var factorY;
+	var cursorX,cursorY;
+	var ex;
+	var removing = false;
+	var roadNum = 1;
+	var trafficNum = 1;
+	var lastSelectedObj = null;
+
+	document.getElementById("map").onclick = function(){
+		window.location.href = "./showMap.html";
+	};
+
+	window.onload = function(evt){	
+	//On window load,send HTTP GET req to updateRoads.php
+	//res is the svg elements (representing roads html code)
+	//read from roads.html file
+	var req = new XMLHttpRequest();
+	req.onreadystatechange = function(){
+		if(req.readyState == 4 & req.status == 200){
+			var res = req.responseText;
+			var doc = new DOMParser().parseFromString(res, "image/svg+xml");
+			document.body.appendChild(doc.firstChild);
+			svg = document.getElementById("mapHolder");
+
+			var childs = svg.childNodes;
+			console.log(childs);
+
+			for (var i = childs.length - 1; i >= 0; i--) {
+				if(childs[i].wholeText)	continue;
+				if(childs[i].localName == 'rect'){
+					childs[i].setAttributeNS(null,"onmouseover","highlightObj(this)");
+					childs[i].setAttributeNS(null,"onmouseleave","deselectObj(this)");
+					childs[i].addEventListener("mousedown",dragBegin);
+					childs[i].addEventListener("dblclick",roadRot);
+					roadID.push(parseInt(childs[i].id,10));
+				}
+				if(childs[i].localName == 'ellipse'){
+					childs[i].setAttributeNS(null,"onmouseover","highlightObj(this)");
+					childs[i].setAttributeNS(null,"onmouseleave","deselectObj(this)");
+					childs[i].addEventListener("mousedown",dragBegin);
+					trafficID.push(parseInt(childs[i].id,10));
+				}		
+			}
+
+			svg.width.baseVal.value = window.outerWidth;
+			svg.height.baseVal.value = 0.5*window.outerHeight;
+			svgPos = [svg.x.baseVal.value,svg.width.baseVal.value - svg.x.baseVal.value,svg.y.baseVal.value,
+			svg.height.baseVal.value - svg.y.baseVal.value];
+			mapWidth = 	svg.width.baseVal.value;
+			mapHeight =	svg.height.baseVal.value;
+
+			factorX = mapWidth/window.outerWidth;
+			factorY = mapHeight/window.outerHeight;
+
+		}
+	}
+	req.open('GET','./updateRoads.php');
+	req.setRequestHeader('Accept','image/svg+xml');
+	req.send();
+};
+
+function removeObj(){
+	document.getElementById("state").innerHTML = 'Removing roads.';
+	removing = true;
+}
+
+function generateCode(){
+	var req = new XMLHttpRequest();
+	var serializer = new XMLSerializer();		
+	var roads = document.getElementById("mapHolder");
+	var roadsStr = serializer.serializeToString(roads);
+
+	req.open('POST','./updateRoads.php',true);
+	req.setRequestHeader("Accept", "image/svg+xml");
+	req.send(roadsStr);
+
+	req.onreadystatechange = function(){
+		if(req.readyState == 4 & req.status == 200){
+			var res = req.responseText;
+		}
+	}
+}
+
+function roadRot(){
+	var xfrom = this.x.baseVal.value;
+	var xto = xfrom + this.width.baseVal.value;
+	var yfrom = this.y.baseVal.value;
+	var yto = yfrom + this.height.baseVal.value;
+
+	var centerX = ((xto - xfrom)/2) + xfrom;
+	var centerY = ((yto - yfrom)/2) + yfrom;
+
+	console.log("xfrom " + xfrom + " xto " + xto);
+	console.log("yfrom " + yfrom + " yto " + yto);
+	console.log("centerX " + centerX + " centerY " + centerY);
+
+	this.x.baseVal.value = centerX - Math.abs(yfrom - yto)/2;
+	this.y.baseVal.value = centerY - Math.abs(xfrom - xto)/2;
+	this.width.baseVal.value = Math.abs(yfrom - yto);
+	this.height.baseVal.value = Math.abs(xfrom - xto);
+
+}
+
+function dragBegin(event) {
+	
+	if(removing){console.log(roadID); let id = this.id;	svg.removeChild(this);	lastSelectedObj = null; roadID = roadID.filter(val => val != id); console.log(roadID);}
+	console.log(removing);
+	lastSelectedObj = this;
+	dragBegin.clickX = -99;
+	dragBegin.clickY = -99;
+
+	if(dragBegin.clickX == -99 && dragBegin.clickY == -99) {
+		dragBegin.clickX = event.clientX;
+		dragBegin.clickY = event.clientY;
+	}
+
+	function dragEnd(){
+		console.log("S");
+		dragBegin.clickX = -99;
+		dragBegin.clickY = -99;
+		lastSelectedObj.removeEventListener("mousemove",move);	
+		//lastSelectedObj = null;		
+	}
+
+	function move(event){
+		console.log("H");
+		if((event.clientX > svgPos[0] && event.clientX < svgPos[1]) || 
+			(event.clientY > svgPos[2] && event.clientY < svgPos[3])){
+			if(lastSelectedObj.localName == 'rect'){
+				lastSelectedObj.x.baseVal.value = lastSelectedObj.x.baseVal.value + event.clientX - dragBegin.clickX;
+				lastSelectedObj.y.baseVal.value = lastSelectedObj.y.baseVal.value + event.clientY - dragBegin.clickY;
+			}else if(lastSelectedObj.localName == 'ellipse'){
+				lastSelectedObj.cx.baseVal.value = lastSelectedObj.cx.baseVal.value + event.clientX - dragBegin.clickX;
+				lastSelectedObj.cy.baseVal.value = lastSelectedObj.cy.baseVal.value + event.clientY - dragBegin.clickY;				
+			}
+			dragBegin.clickX = event.clientX;
+			dragBegin.clickY = event.clientY;
+		}
+	}
+
+	lastSelectedObj.addEventListener("mousemove",move);
+	lastSelectedObj.addEventListener("mouseup",dragEnd);
+
+}
+
+function deselectObj(x) {
+	x.style.fill = "000000";
+}
+
+function highlightObj(x) {
+	x.style.fill = "cfb495";
+}
+
+function createRoad(width = 10,height,rotation){
+	removing = false;
+	document.getElementById("state").innerHTML = 'Creating roads.';
+	var road = document.createElementNS(svgNS,"rect");
+
+	while(roadID.includes(roadNum)){console.log(roadNum); roadNum++; }	
+	road.setAttributeNS(null,"id",roadNum);
+	road.setAttributeNS(null,"width",width);
+	road.setAttributeNS(null,"height",height);
+	road.setAttributeNS(null,"x",100);
+	road.setAttributeNS(null,"onmouseover","highlightObj(this)");
+	road.setAttributeNS(null,"onmouseleave","deselectObj(this)");
+	road.addEventListener("mousedown",dragBegin);
+	road.addEventListener("dblclick",roadRot);
+	svg.appendChild(road);
+	roadNum ++;
+}
+
+function createTrafficL(){
+	removing = false;
+	console.log(svg);
+	document.getElementById("state").innerHTML = "Creating traffic light.";
+	var trafficLight = document.createElementNS(svgNS,'ellipse');
+
+	while(trafficID.includes(trafficNum)){console.log(trafficNum); trafficNum++; }
+	trafficLight.setAttribute("id",trafficNum);
+	trafficLight.setAttribute("cx",20);
+	trafficLight.setAttribute("cy",20);
+	trafficLight.setAttribute("rx",20);
+	trafficLight.setAttribute("ry",20);
+	trafficLight.setAttributeNS(null,"onmouseover","highlightObj(this)");
+	trafficLight.setAttributeNS(null,"onmouseleave","deselectObj(this)");
+	trafficLight.addEventListener("mousedown",dragBegin);
+	svg.appendChild(trafficLight);
+	trafficNum ++;
+}
+
+</script>
+
+<!-- 
+//================================================remove road
+//street snapping
+//Nodes
+//================================================street rotating
+//================================================showMap.html DB and streets
+//mouseout of street 
+-->
+</html>
